@@ -131,20 +131,11 @@ const exportCustomerData = async (req, res) => {
 };
 
 // @route  PUT /api/customers/:id
-// @desc   Owner (the Technician/Salesperson who added it) or their up-line managers can edit.
+// @desc   Any authenticated role (Super Admin, Regional Manager, Branch Head, Technician,
+//         Salesperson) can edit a customer visit record - not just its original owner.
 const updateCustomerData = async (req, res) => {
   const record = await CustomerData.findById(req.params.id);
   if (!record) return res.status(404).json({ message: 'Record not found' });
-
-  const isOwner = String(record.addedBy) === String(req.user._id);
-  const isManagerInScope =
-    (req.user.role === ROLES.SUPER_ADMIN) ||
-    (req.user.role === ROLES.REGIONAL_MANAGER && String(record.zone) === String(req.user.zone)) ||
-    (req.user.role === ROLES.BRANCH_HEAD && String(record.branch) === String(req.user.branch));
-
-  if (!isOwner && !isManagerInScope) {
-    return res.status(403).json({ message: 'You do not have permission to edit this record' });
-  }
 
   const { name, phone, productName, visitDate, nextVisitDate, visitType, latitude, longitude, address } = req.body;
   if (name) record.name = name;

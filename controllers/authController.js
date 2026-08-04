@@ -36,6 +36,9 @@ const register = async (req, res) => {
     const existingEmail = await User.findOne({ email: email.toLowerCase() });
     if (existingEmail) return res.status(409).json({ message: 'Email is already registered' });
 
+    const existingPhone = await User.findOne({ phone: phone.trim() });
+    if (existingPhone) return res.status(409).json({ message: 'Phone number is already registered' });
+
     if (zone) {
       const zoneDoc = await Zone.findById(zone);
       if (!zoneDoc) return res.status(400).json({ message: 'Selected zone does not exist' });
@@ -73,21 +76,21 @@ const register = async (req, res) => {
 };
 
 // @route  POST /api/auth/login
-// @desc   Login using UserID (not email) + password, as required by the spec.
+// @desc   Login using phone number + password. UserID is reserved for password reset only.
 const login = async (req, res) => {
   try {
-    const { userId, password } = req.body;
-    if (!userId || !password) {
-      return res.status(400).json({ message: 'UserID and password are required' });
+    const { phone, password } = req.body;
+    if (!phone || !password) {
+      return res.status(400).json({ message: 'Phone number and password are required' });
     }
 
-    const user = await User.findOne({ userId: userId.trim().toUpperCase() });
-    if (!user) return res.status(401).json({ message: 'Invalid UserID or password' });
+    const user = await User.findOne({ phone: phone.trim() });
+    if (!user) return res.status(401).json({ message: 'Invalid phone number or password' });
 
     if (!user.isActive) return res.status(403).json({ message: 'This account has been deactivated' });
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid UserID or password' });
+    if (!isMatch) return res.status(401).json({ message: 'Invalid phone number or password' });
 
     if (user.status === STATUS.PENDING) {
       return res.status(403).json({ message: 'Your account is still pending approval' });

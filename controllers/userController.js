@@ -135,6 +135,9 @@ const createUser = async (req, res) => {
   const existingEmail = await User.findOne({ email: email.toLowerCase() });
   if (existingEmail) return res.status(409).json({ message: 'Email is already registered' });
 
+  const existingPhone = await User.findOne({ phone: phone.trim() });
+  if (existingPhone) return res.status(409).json({ message: 'Phone number is already registered' });
+
   const userId = await generateUserId(role);
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -175,7 +178,11 @@ const updateUser = async (req, res) => {
 
   const { name, phone, email, password, zone, branch, isActive } = req.body;
   if (name) target.name = name;
-  if (phone) target.phone = phone;
+  if (phone && phone !== target.phone) {
+    const existingPhone = await User.findOne({ phone: phone.trim(), _id: { $ne: target._id } });
+    if (existingPhone) return res.status(409).json({ message: 'Phone number is already registered to another account' });
+    target.phone = phone;
+  }
   if (email) target.email = email.toLowerCase();
   if (password) target.passwordHash = await bcrypt.hash(password, 10);
   if (zone && req.user.role === ROLES.SUPER_ADMIN) target.zone = zone;
@@ -219,7 +226,11 @@ const updateMe = async (req, res) => {
   const me = await User.findById(req.user._id);
 
   if (name) me.name = name;
-  if (phone) me.phone = phone;
+  if (phone && phone !== me.phone) {
+    const existingPhone = await User.findOne({ phone: phone.trim(), _id: { $ne: me._id } });
+    if (existingPhone) return res.status(409).json({ message: 'Phone number is already registered to another account' });
+    me.phone = phone;
+  }
   if (email) {
     const existing = await User.findOne({ email: email.toLowerCase(), _id: { $ne: me._id } });
     if (existing) return res.status(409).json({ message: 'Email already in use' });
