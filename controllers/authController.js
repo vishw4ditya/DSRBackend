@@ -106,57 +106,27 @@ const login = async (req, res) => {
   }
 };
 
-// @route  POST /api/auth/forgot-password
-// @desc   Generates a 6-digit OTP and returns it directly in the response for demo
-//         purposes (no real SMS/email gateway wired up). In production, replace the
-//         response payload with an actual send-via-SMS/email call and don't return the OTP.
-const forgotPassword = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ message: 'UserID is required' });
-
-    const user = await User.findOne({ userId: userId.trim().toUpperCase() });
-    if (!user) return res.status(404).json({ message: 'No account found with that UserID' });
-
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    user.resetOtp = otp;
-    user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // valid 10 minutes
-    await user.save();
-
-    res.json({
-      message: 'OTP generated. (Demo mode: no SMS/email provider connected, so it is returned here.)',
-      demoOtp: otp,
-      expiresInMinutes: 10,
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Could not generate OTP', error: err.message });
-  }
-};
-
 // @route  POST /api/auth/reset-password
+// @desc   Resets a password directly if the provided UserID and phone number match
+//         the same account - no OTP step. This works because both values were
+//         set at registration/approval time and are hard for someone else to guess
+//         together, but note it is weaker than a true OTP/SMS verification flow.
 const resetPassword = async (req, res) => {
   try {
-    const { userId, otp, newPassword } = req.body;
-    if (!userId || !otp || !newPassword) {
-      return res.status(400).json({ message: 'UserID, OTP and newPassword are required' });
+    const { userId, phone, newPassword } = req.body;
+    if (!userId || !phone || !newPassword) {
+      return res.status(400).json({ message: 'UserID, phone number and newPassword are required' });
     }
     if (newPassword.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
     const user = await User.findOne({ userId: userId.trim().toUpperCase() });
-    if (!user) return res.status(404).json({ message: 'No account found with that UserID' });
-
-    if (!user.resetOtp || user.resetOtp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-    if (!user.resetOtpExpiry || user.resetOtpExpiry < new Date()) {
-      return res.status(400).json({ message: 'OTP has expired, please request a new one' });
+    if (!user || user.phone !== phone.trim()) {
+      return res.status(400).json({ message: 'UserID and phone number do not match any account' });
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);
-    user.resetOtp = null;
-    user.resetOtpExpiry = null;
     await user.save();
 
     res.json({ message: 'Password reset successful. You can now log in with your new password.' });
@@ -165,4 +135,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, forgotPassword, resetPassword };
+module.exports = { register, login, resetPassword };

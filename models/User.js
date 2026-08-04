@@ -26,10 +26,6 @@ const userSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     isActive: { type: Boolean, default: true }, // soft-delete flag, used by CRUD "delete"
-
-    // Password reset (demo on-screen OTP flow - no real SMS/email provider wired up)
-    resetOtp: { type: String, default: null },
-    resetOtpExpiry: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -41,8 +37,6 @@ userSchema.methods.comparePassword = function (plainPassword) {
 userSchema.methods.toSafeJSON = function () {
   const obj = this.toObject();
   delete obj.passwordHash;
-  delete obj.resetOtp;
-  delete obj.resetOtpExpiry;
   return obj;
 };
 

@@ -25,7 +25,7 @@ const getPendingApprovals = async (req, res) => {
 
   const filter = { ...scopeFilterFor(req.user, rule.canApprove), status: STATUS.PENDING };
   const pending = await User.find(filter)
-    .select('-passwordHash -resetOtp -resetOtpExpiry')
+    .select('-passwordHash')
     .populate('zone', 'name')
     .populate('branch', 'name')
     .sort({ createdAt: -1 });
@@ -100,7 +100,7 @@ const listUsers = async (req, res) => {
   }
 
   const users = await User.find(filter)
-    .select('-passwordHash -resetOtp -resetOtpExpiry')
+    .select('-passwordHash')
     .populate('zone', 'name')
     .populate('branch', 'name')
     .sort({ createdAt: -1 });
@@ -213,7 +213,7 @@ const deleteUser = async (req, res) => {
 // @route  GET /api/users/me
 const getMe = async (req, res) => {
   const me = await User.findById(req.user._id)
-    .select('-passwordHash -resetOtp -resetOtpExpiry')
+    .select('-passwordHash')
     .populate('zone', 'name')
     .populate('branch', 'name');
   res.json(me);
