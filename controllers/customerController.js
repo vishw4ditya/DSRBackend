@@ -1,6 +1,16 @@
 const CustomerData = require('../models/CustomerData');
 const toCsv = require('../utils/toCsv');
+const PDFDocument = require('pdfkit');
 const { ROLES, DATA_ENTRY_ROLES, VISIT_TYPE } = require('../utils/constants');
+
+// Same "is this date today" check used on the frontend to highlight due-today rows,
+// mirrored here so the PDF report can color those rows red too.
+function isToday(dateValue) {
+  if (!dateValue) return false;
+  const d = new Date(dateValue);
+  const t = new Date();
+  return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+}
 
 // @route  POST /api/customers
 // @desc   Technician or Salesperson adds a customer visit record.
@@ -130,6 +140,98 @@ const exportCustomerData = async (req, res) => {
   res.send(csv);
 };
 
+// @route  GET /api/customers/export/pdf
+// @desc   Same filters as listCustomerData, but streams back a formatted PDF table report.
+//         Rows whose Next Visit Date is today are shown in red, matching the on-screen highlighting.
+const exportCustomerDataPdf = async (req, res) => {
+  const filter = buildFilter(req);
+
+  const records = await CustomerData.find(filter)
+    .populate('addedBy', 'name userId role')
+    .populate('zone', 'name')
+    .populate('branch', 'name')
+    .sort({ visitDate: -1 })
+    .lean();
+
+  const roleLabel = req.query.addedByRole || null;
+
+  const doc = new PDFDocument({ margin: 28, size: 'A4', layout: 'landscape' });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="customer-data-${Date.now()}.pdf"`);
+  doc.pipe(res);
+
+  // --- Header ---
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#1a1d29').text('DSR Customer Management System', { align: 'center' });
+  doc
+    .font('Helvetica')
+    .fontSize(11)
+    .text(`Customer Visit Data Report${roleLabel ? ' - ' + roleLabel : ''}`, { align: 'center' });
+  doc
+    .fontSize(8.5)
+    .fillColor('#656b80')
+    .text(`Generated: ${new Date().toLocaleString()}   |   Total records: ${records.length}`, { align: 'center' });
+  doc.moveDown(1.2);
+  doc.fillColor('#1a1d29');
+
+  // --- Table columns ---
+  const showType = roleLabel === 'Technician' || !roleLabel;
+  const columns = [
+    { label: 'Customer', get: (r) => r.name, width: 85 },
+    { label: 'Phone', get: (r) => r.phone, width: 65 },
+    { label: 'Address', get: (r) => r.liveLocation?.address || '-', width: 170 },
+    { label: 'Product', get: (r) => r.productName, width: 75 },
+    { label: 'Visit Date', get: (r) => (r.visitDate ? new Date(r.visitDate).toLocaleDateString() : '-'), width: 60 },
+    { label: 'Next Visit', get: (r) => (r.nextVisitDate ? new Date(r.nextVisitDate).toLocaleDateString() : '-'), width: 60 },
+    ...(showType ? [{ label: 'Type', get: (r) => r.visitType || '-', width: 55 }] : []),
+    { label: 'Added By', get: (r) => `${r.addedBy?.name || ''} (${r.addedBy?.userId || ''})`, width: 100 },
+    { label: 'Zone / Branch', get: (r) => `${r.zone?.name || ''} / ${r.branch?.name || ''}`, width: 90 },
+  ];
+  const startX = doc.page.margins.left;
+  const rowHeight = 15;
+
+  function drawTableHeader() {
+    let x = startX;
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#4338ca');
+    columns.forEach((col) => {
+      doc.text(col.label, x, doc.y, { width: col.width, height: 12, ellipsis: true });
+      x += col.width;
+    });
+    doc.moveDown(0.6);
+    doc
+      .moveTo(startX, doc.y)
+      .lineTo(x, doc.y)
+      .strokeColor('#e2e5ef')
+      .stroke();
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(8).fillColor('#1a1d29');
+  }
+
+  drawTableHeader();
+
+  records.forEach((r) => {
+    if (doc.y > doc.page.height - doc.page.margins.bottom - rowHeight) {
+      doc.addPage();
+      drawTableHeader();
+    }
+    const y = doc.y;
+    const dueToday = isToday(r.nextVisitDate);
+    doc.fillColor(dueToday ? '#b91c1c' : '#1a1d29');
+
+    let x = startX;
+    columns.forEach((col) => {
+      doc.text(String(col.get(r) ?? '-'), x, y, { width: col.width, height: 12, ellipsis: true });
+      x += col.width;
+    });
+    doc.y = y + rowHeight;
+  });
+
+  if (records.length === 0) {
+    doc.fillColor('#656b80').text('No records match these filters.', startX, doc.y);
+  }
+
+  doc.end();
+};
+
 // @route  PUT /api/customers/:id
 // @desc   Any authenticated role (Super Admin, Regional Manager, Branch Head, Technician,
 //         Salesperson) can edit a customer visit record - not just its original owner.
@@ -176,6 +278,7 @@ module.exports = {
   listMyCustomerData,
   listCustomerData,
   exportCustomerData,
+  exportCustomerDataPdf,
   updateCustomerData,
   deleteCustomerData,
 };
