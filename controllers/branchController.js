@@ -27,7 +27,7 @@ const listBranches = async (req, res) => {
   const filter = { isActive: true };
   if (req.query.zone) filter.zone = req.query.zone;
 
-  // Regional Manager / Branch Head are naturally scoped to their own zone/branch
+  // Regional Manager / Branch Manager are naturally scoped to their own zone/branch
   if (req.user) {
     if (req.user.role === ROLES.REGIONAL_MANAGER) filter.zone = req.user.zone;
     if (req.user.role === ROLES.BRANCH_HEAD) filter._id = req.user.branch;

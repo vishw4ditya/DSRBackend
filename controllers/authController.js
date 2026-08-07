@@ -9,7 +9,7 @@ const { ROLES, SELF_REGISTERABLE_ROLES, STATUS } = require('../utils/constants')
 // @route  POST /api/auth/register
 // @desc   Public registration. Role must be one of the 4 self-registerable roles.
 //         Account is created with status "pending" and must be approved by the
-//         relevant Super Admin / Regional Manager / Branch Head before login works.
+//         relevant Super Admin / Regional Manager / Branch Manager before login works.
 const register = async (req, res) => {
   try {
     const { name, phone, email, password, role, zone, branch } = req.body;
@@ -24,11 +24,11 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    // Zone is required for Regional Manager, Branch Head, Technician, Salesperson
+    // Zone is required for Regional Manager, Branch Manager, Technician, Salesperson
     if (role !== ROLES.SUPER_ADMIN && !zone) {
       return res.status(400).json({ message: 'Zone is required for this role' });
     }
-    // Branch is required for Branch Head, Technician, Salesperson (not Regional Manager)
+    // Branch is required for Branch Manager, Technician, Salesperson (not Regional Manager)
     if ([ROLES.BRANCH_HEAD, ROLES.TECHNICIAN, ROLES.SALESPERSON].includes(role) && !branch) {
       return res.status(400).json({ message: 'Branch is required for this role' });
     }

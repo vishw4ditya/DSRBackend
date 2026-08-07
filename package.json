@@ -1,7 +1,7 @@
 {
   "name": "dsr-backend",
   "version": "1.0.0",
-  "description": "Backend API for multi-role field service CRM (Zones, Branches, Super Admin, Regional Manager, Branch Head, Technician, Salesperson)",
+  "description": "Backend API for multi-role field service CRM (Zones, Branches, Super Admin, Regional Manager, Branch Manager, Technician, Salesperson)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

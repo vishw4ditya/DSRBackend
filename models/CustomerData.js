@@ -26,7 +26,7 @@ const customerDataSchema = new mongoose.Schema(
     addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     addedByRole: { type: String, required: true },
 
-    // Denormalised zone/branch so Super Admin / Regional Manager / Branch Head
+    // Denormalised zone/branch so Super Admin / Regional Manager / Branch Manager
     // can filter and scope data without extra joins.
     zone: { type: mongoose.Schema.Types.ObjectId, ref: 'Zone', required: true },
     branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },

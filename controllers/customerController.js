@@ -233,7 +233,7 @@ const exportCustomerDataPdf = async (req, res) => {
 };
 
 // @route  PUT /api/customers/:id
-// @desc   Any authenticated role (Super Admin, Regional Manager, Branch Head, Technician,
+// @desc   Any authenticated role (Super Admin, Regional Manager, Branch Manager, Technician,
 //         Salesperson) can edit a customer visit record - not just its original owner.
 const updateCustomerData = async (req, res) => {
   const record = await CustomerData.findById(req.params.id);

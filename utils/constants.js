@@ -13,7 +13,7 @@ const ROLES = {
 const ROLE_PREFIX = {
   [ROLES.SUPER_ADMIN]: 'SA',
   [ROLES.REGIONAL_MANAGER]: 'RM',
-  [ROLES.BRANCH_HEAD]: 'BH',
+  [ROLES.BRANCH_HEAD]: 'BM', // "Branch Manager" - internal role key stays BranchHead for DB compatibility
   [ROLES.TECHNICIAN]: 'TC',
   [ROLES.SALESPERSON]: 'SP',
 };
