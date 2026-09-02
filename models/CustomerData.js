@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { VISIT_TYPE } = require('../utils/constants');
+const { VISIT_TYPE, CUSTOMER_TYPE } = require('../utils/constants');
 
 const customerDataSchema = new mongoose.Schema(
   {
@@ -21,6 +21,10 @@ const customerDataSchema = new mongoose.Schema(
     // Only meaningful for Technician entries (radio button in the spec).
     // Left null for Salesperson entries.
     visitType: { type: String, enum: [...Object.values(VISIT_TYPE), null], default: null },
+
+    // Lead temperature (Hot/Cold/Warm), only meaningful for Salesperson entries.
+    // Left null for Technician entries.
+    customerType: { type: String, enum: [...Object.values(CUSTOMER_TYPE), null], default: null },
 
     // Who added it, and their role at the time, for easy filtering/reporting
     addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

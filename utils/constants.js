@@ -42,6 +42,14 @@ const VISIT_TYPE = {
   SERVICE: 'Service',
 };
 
+// Lead temperature classification, entered by Salespersons only (parallel to how
+// Technicians classify a visit as Installation/Service).
+const CUSTOMER_TYPE = {
+  HOT: 'Hot',
+  COLD: 'Cold',
+  WARM: 'Warm',
+};
+
 // Defines which role can approve which other role, and the scope (zone/branch) that applies.
 // SuperAdmin can approve everyone regardless of zone/branch (global override).
 const APPROVAL_RULES = {
@@ -69,6 +77,7 @@ module.exports = {
   DATA_ENTRY_ROLES,
   STATUS,
   VISIT_TYPE,
+  CUSTOMER_TYPE,
   APPROVAL_RULES,
   MANAGE_RULES,
 };
